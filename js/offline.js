@@ -29,32 +29,37 @@
     checks: {
       xhr: {
         url: function() {
-          return "/offline-test-request/" + (Math.floor(Math.random() * 1000000000));
+          return "/favicon.ico?_=" + (Math.floor(Math.random() * 1000000000));
         }
       },
       image: {
         url: function() {
-          return "http://dqakt69vkj09v.cloudfront.net/are-we-online.gif?_=" + (Math.floor(Math.random() * 1000000000));
+          return "/favicon.ico?_=" + (Math.floor(Math.random() * 1000000000));
         }
       },
-      active: 'image'
+      active: 'xhr'
     },
     checkOnLoad: false,
-    interceptRequests: true
+    interceptRequests: true,
+    reconnect: true
   };
 
   grab = function(obj, key) {
-    var cur, i, part, _i, _len, _ref;
+    var cur, i, part, parts, _i, _len;
     cur = obj;
-    _ref = key.split('.');
-    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-      part = _ref[i];
+    parts = key.split('.');
+    for (i = _i = 0, _len = parts.length; _i < _len; i = ++_i) {
+      part = parts[i];
       cur = cur[part];
       if (typeof cur !== 'object') {
         break;
       }
     }
-    return cur;
+    if (i === parts.length - 1) {
+      return cur;
+    } else {
+      return void 0;
+    }
   };
 
   Offline.getOption = function(key) {
@@ -67,14 +72,14 @@
     }
   };
 
-  if (typeof document.addEventListener === "function") {
-    document.addEventListener('online', function() {
+  if (typeof window.addEventListener === "function") {
+    window.addEventListener('online', function() {
       return setTimeout(Offline.confirmUp, 100);
     }, false);
   }
 
-  if (typeof document.addEventListener === "function") {
-    document.addEventListener('offline', function() {
+  if (typeof window.addEventListener === "function") {
+    window.addEventListener('offline', function() {
       return Offline.confirmDown();
     }, false);
   }
@@ -205,6 +210,10 @@
     img.src = Offline.getOption('checks.image.url');
     return void 0;
   };
+
+  Offline.checks.down = Offline.markDown;
+
+  Offline.checks.up = Offline.markUp;
 
   Offline.check = function() {
     Offline.trigger('checking');

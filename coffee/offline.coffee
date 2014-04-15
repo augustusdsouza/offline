@@ -19,25 +19,33 @@ defaultOptions =
   checks:
     xhr:
       url: ->
-        "/offline-test-request/#{ Math.floor(Math.random() * 1000000000) }"
+        # This can be any endpoint, even one that will 404.
+        "/favicon.ico?_=#{ Math.floor(Math.random() * 1000000000) }"
 
     image:
       url: ->
-        # This can be any image, feel free to use our ultra-small gif:
-        "http://dqakt69vkj09v.cloudfront.net/are-we-online.gif?_=#{ Math.floor(Math.random() * 1000000000) }"
+        # This can be any image, this is the better option if your image is on a different domain, otherwise just use XHR
+        "/favicon.ico?_=#{ Math.floor(Math.random() * 1000000000) }"
 
-    active: 'image'
+    active: 'xhr'
 
   checkOnLoad: false
 
   interceptRequests: true
 
+  reconnect: true
+
 grab = (obj, key) ->
   cur = obj
-  for part, i in key.split('.')
+  parts = key.split('.')
+  for part, i in parts
     cur = cur[part]
     break if typeof cur isnt 'object'
-  cur
+
+  if i is parts.length - 1
+    cur
+  else
+    undefined
   
 Offline.getOption = (key) ->
   val = grab(Offline.options, key) ? grab(defaultOptions, key)
@@ -50,12 +58,12 @@ Offline.getOption = (key) ->
 # These events are available in modern browsers, but they mean different things.
 # In FF and IE they mean the user has explicitly entered "Offline Mode"
 # In Chrome they mean that the internet connection was lost or restored
-document.addEventListener? 'online', ->
+window.addEventListener? 'online', ->
   # The event fires slightly before the browser is ready to make a request
   setTimeout Offline.confirmUp, 100
 , false
 
-document.addEventListener? 'offline', ->
+window.addEventListener? 'offline', ->
   Offline.confirmDown()
 , false
 
@@ -156,6 +164,9 @@ Offline.checks.image = ->
   img.src = Offline.getOption('checks.image.url')
   
   undefined
+
+Offline.checks.down = Offline.markDown
+Offline.checks.up = Offline.markUp
 
 Offline.check = ->
   Offline.trigger 'checking'

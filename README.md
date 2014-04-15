@@ -1,6 +1,10 @@
 Offline
 ======
 
+**Note to users pre-0.6.0:  Offline previously used a cloudfront hosted file as one of it's methods of detecting the connection status.  This method is now deprecated.  Please upgrade to Offline 0.7.0+.**
+
+**Note that the cloudfront file will be removed at the end of March, please upgrade before then.**
+
 Improve the experience of your app when your users lose connection.
 
 - Monitors ajax requests looking for failure
@@ -13,7 +17,9 @@ Improve the experience of your app when your users lose connection.
 Installing
 ----------
 
-Include [the javascript](https://raw.github.com/HubSpot/offline/v0.4.4/offline.min.js) and one of [the themes](http://github.hubspot.com/offline/docs/welcome/) on your site.  You're done!
+Include [the javascript](https://raw.github.com/HubSpot/offline/v0.7.2/offline.min.js) and one of [the themes](http://github.hubspot.com/offline/docs/welcome/) on your site.  You're done!
+
+If you'd like to get a peek at how it looks on your site, disconnect your internet, or try out the [simulator](http://craigshoemaker.github.io/offlinejs-simulate-ui/).
 
 Advanced
 --------
@@ -41,7 +47,7 @@ Options (any can be provided as a function), with their defaults:
   },
 
   // Should we store and attempt to remake requests which fail while the connection is down.
-  requests: true
+  requests: true,
 
   // Should we show a snake game while the connection is down to keep the user entertained?
   // It's not included in the normal build, you should bring in js/snake.js in addition to
@@ -77,35 +83,30 @@ Properties
 Checking
 --------
 
-Offline ships with two methods for checking the connection.  One makes a request for a tiny image hosted on a
-cloudfront account for the benevolence of all, the other makes an XHR request against the current domain,
-hoping to get back any sort of response (even a 404).
-
-You can change the url of the image to be one you control, if you like:
+By default, Offline makes an XHR request to load your `/favicon.ico` to check the connection.  If you don't
+have such a file, it will 404 in the console, but otherwise work fine (even a 404 means the connection is up).
+You can change the URL it hits (an endpoint which will respond with a quick 204 is perfect):
 
 ```javascript
-Offline.options = {checks: {image: {url: 'my-image.gif'}}};
+Offline.options = {checks: {xhr: {url: '/connection-test'}}};
 ```
 
-Loading an image was chosen (rather than a script file), because it limits the potential damage if a
-hostile party were to be in control of it.
+Make sure that the URL you check has the same origin as your page (the connection method, domain and port all must be the same), or you
+will run into CORS issues.  You can add `Access-Control` headers to the endpoint to fix it on modern browsers, but it will still cause issues on
+IE9 and below.
 
-You can also switch to the XHR method:
+If you do want to run tests on a different domain, try the image method.  It loads an image, which are allowed to cross domains.
 
 ```javascript
-Offline.options = {checks: {active: 'xhr'}}
+Offline.options = {checks: {image: {url: 'my-image.gif'}, active: 'image'}}
 ```
 
-The XHR method is not enabled by default because of a concern that some sites do a significant amount of
-processing to build their 404 page, so it's not something we want to send unnecessarily.  It's also
-possible that the page would respond with a redirect to a different domain, creating a CORS problem.
-If you have control of the domain and can create an endpoint which just responds with a quick 204,
-that's the perfect solution.  You can set the endpoint in settings as well:
+The one cavet is that with the image method, we can't distinguish a 404 from a genuine connection issue, so any error at all will
+appear to Offline as a connection issue.
 
-```javascript
-Offline.options = {checks: {xhr: {url: '/health-check'}}};
-```
-
+Offline also includes a check called `'up'` and another called `'down'` which will always report being up or down respectively for
+testing.  You can activate them by setting the `active` option, adding a data attribute to your script tag with the name
+`data-simulate` and value `'up'` or `'down'`, or by setting `localStorage.OFFLINE_SIMULATE` to `'up'` or `'down'`.
 
 Reconnect
 ---------
